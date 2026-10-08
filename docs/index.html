@@ -1,0 +1,422 @@
+<title>Iron Oak Ops Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a gym ops board. Request bar on top; run timeline (main) beside the approval queue and gym state (side). Workers are coded by competition plate colors. */
+:root {
+  --bg: #e9ecee;
+  --surface: #ffffff;
+  --sunk: #f4f6f7;
+  --ink: #15191d;
+  --muted: #5a646d;
+  --line: #d2d8dc;
+  --plate-red: #c42f2a;
+  --plate-blue: #1d5ca8;
+  --plate-yellow: #c99a00;
+  --plate-green: #2c8346;
+  --ok: #2c8346;
+  --wait-bg: #15191d;
+  --wait-fg: #ffffff;
+  --danger: #b3261e;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111417; --surface: #1a1e22; --sunk: #15181b; --ink: #e7eaed; --muted: #9aa3ac; --line: #2c3238;
+    --plate-red: #e5544e; --plate-blue: #5b95e0; --plate-yellow: #e6b72a; --plate-green: #4fb36d;
+    --ok: #4fb36d; --wait-bg: #e7eaed; --wait-fg: #111417; --danger: #f07167;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111417; --surface: #1a1e22; --sunk: #15181b; --ink: #e7eaed; --muted: #9aa3ac; --line: #2c3238;
+  --plate-red: #e5544e; --plate-blue: #5b95e0; --plate-yellow: #e6b72a; --plate-green: #4fb36d;
+  --ok: #4fb36d; --wait-bg: #e7eaed; --wait-fg: #111417; --danger: #f07167;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 48px; display: grid; gap: 22px; }
+
+header { display: grid; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(38px, 7vw, 64px); line-height: .95; letter-spacing: .01em; margin: 0; text-transform: uppercase; text-wrap: balance; }
+.lede { margin: 4px 0 0; max-width: 64ch; color: var(--muted); }
+.lede strong { color: var(--ink); font-weight: 600; }
+
+.plates { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 8px; }
+.plate-key { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.disc { --c: var(--muted); width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, var(--surface) 0 2px, var(--c) 2.5px 100%); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 70%, #000); flex: none; }
+.w-front_desk { --c: var(--plate-blue); }
+.w-classes { --c: var(--plate-yellow); }
+.w-equipment { --c: var(--plate-red); }
+.w-membership { --c: var(--plate-green); }
+
+.requests { display: grid; gap: 10px; }
+.requests h2, .panel h2 { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: .04em; text-transform: uppercase; margin: 0; }
+.req-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.req { font: inherit; font-size: 14px; text-align: left; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 14px; border-radius: 6px; cursor: pointer; max-width: 100%; }
+.req:hover { border-color: var(--ink); }
+.req[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--bg); }
+.req:focus-visible, .btn:focus-visible { outline: 3px solid var(--plate-blue); outline-offset: 2px; }
+.req small { display: block; font-size: 12px; opacity: .75; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.side { display: grid; gap: 22px; min-width: 0; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.note { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+
+/* Timeline */
+.timeline { display: grid; gap: 10px; }
+.msg { display: grid; gap: 4px; }
+.who { font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.bubble { padding: 10px 14px; border-radius: 6px; background: var(--sunk); border: 1px solid var(--line); white-space: pre-line; }
+.msg.manager .bubble { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.task { border-left: 4px solid var(--c); background: var(--sunk); border-radius: 0 6px 6px 0; padding: 10px 12px 12px; display: grid; gap: 8px; }
+.task-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.task-title span.q { font-weight: 400; color: var(--muted); }
+.call { display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; min-width: 0; }
+.call-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.fn { font-family: var(--mono); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.args { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.result { font-size: 13.5px; overflow-wrap: anywhere; }
+.reply { font-size: 14px; font-style: italic; color: var(--muted); }
+
+.chip { font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.chip.now { color: var(--ok); border: 1px solid var(--ok); }
+.chip.wait { background: var(--wait-bg); color: var(--wait-fg); }
+.chip.blocked { color: var(--danger); border: 1px dashed var(--danger); }
+.chip.done { color: var(--ok); border: 1px solid var(--ok); }
+.chip.no { color: var(--muted); border: 1px solid var(--line); }
+
+.fade { animation: rise .28s ease-out both; }
+@keyframes rise { from { opacity: .2; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fade { animation: none; } }
+
+/* Approval queue */
+.queue { display: grid; gap: 10px; }
+.qitem { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; display: grid; gap: 8px; }
+.qitem.pending { border-color: var(--ink); }
+.qhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.qnum { font-family: var(--display); font-weight: 800; font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; }
+.qdesc { font-size: 14px; }
+.qbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: inherit; font-size: 13.5px; font-weight: 600; padding: 7px 14px; border-radius: 5px; cursor: pointer; border: 1.5px solid var(--ink); }
+.btn.yes { background: var(--ink); color: var(--bg); }
+.btn.nope { background: transparent; color: var(--ink); }
+.btn:hover { opacity: .85; }
+.empty { color: var(--muted); font-size: 14px; }
+
+/* Gym state */
+.floor { display: grid; gap: 6px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; padding-block: 5px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row .k { min-width: 0; overflow-wrap: anywhere; }
+.pill { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.in { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.pill.out { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.pill.issue { color: var(--plate-yellow); background: color-mix(in srgb, var(--plate-yellow) 16%, transparent); }
+.tally { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tally div { background: var(--sunk); border-radius: 6px; padding: 8px 10px; }
+.tally b { display: block; font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.tally span { font-size: 12px; color: var(--muted); }
+h3 { font-size: 12px; font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 4px 0 0; font-weight: 500; }
+
+.audit { font-family: var(--mono); font-size: 12px; line-height: 1.6; background: var(--sunk); border-radius: 6px; padding: 10px 12px; max-height: 260px; overflow: auto; }
+.audit div { white-space: pre-wrap; overflow-wrap: anywhere; }
+.audit .ev-queued { color: var(--ink); font-weight: 500; }
+.audit .ev-auto { color: var(--muted); }
+.audit .ev-approved { color: var(--ok); }
+.audit .ev-rejected, .audit .ev-blocked { color: var(--danger); }
+
+footer { color: var(--muted); font-size: 13px; }
+footer a { color: var(--ink); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Gym Staff Agents · interactive demo</div>
+    <h1>Iron Oak Ops Board</h1>
+    <p class="lede">The manager sends one request. A <strong>coordinator</strong> hands the work to four narrow <strong>workers</strong>. Safe steps run now; anything that <strong>spends money, commits to a member or goes public</strong> waits in the approval queue for you.</p>
+    <div class="plates" aria-label="Workers">
+      <span class="plate-key"><span class="disc w-front_desk"></span>Front desk</span>
+      <span class="plate-key"><span class="disc w-classes"></span>Classes</span>
+      <span class="plate-key"><span class="disc w-equipment"></span>Equipment</span>
+      <span class="plate-key"><span class="disc w-membership"></span>Membership</span>
+    </div>
+  </header>
+
+  <section class="requests" aria-labelledby="req-h">
+    <h2 id="req-h">Send a request</h2>
+    <div class="req-list" id="reqs"></div>
+  </section>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="run-h">
+      <div class="panel-head">
+        <h2 id="run-h">The run</h2>
+        <span class="note">Simulated run with sample data. No AI is called.</span>
+      </div>
+      <div class="timeline" id="timeline" aria-live="polite"></div>
+    </section>
+
+    <div class="side">
+      <section class="panel" aria-labelledby="q-h">
+        <div class="panel-head"><h2 id="q-h">Waiting for your OK</h2><span class="note" id="qcount"></span></div>
+        <div class="queue" id="queue"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="g-h">
+        <h2 id="g-h">The gym right now</h2>
+        <div class="tally" id="tally"></div>
+        <h3>Equipment floor</h3>
+        <div class="floor" id="floor"></div>
+        <h3>Audit log</h3>
+        <div class="audit" id="audit"></div>
+      </section>
+    </div>
+  </div>
+
+  <footer>Source and tests: <a href="https://github.com/jordanaftali/gym-staff-agents" target="_blank" rel="noopener">github.com/jordanaftali/gym-staff-agents</a>. The Python version runs the same flow with Claude.</footer>
+</div>
+
+<script>
+(() => {
+  // ---------- Demo gym (mirrors gym_agents/data.py) ----------
+  const freshState = () => ({
+    members: {
+      M001: { name: "Ana Souza", status: "active" },
+      M002: { name: "Marcus Lee", status: "active", note: "Charged twice for October ($59 x2)" },
+      M003: { name: "Priya Shah", status: "active", note: "Asked to freeze for 2 months" },
+      M004: { name: "Diego Ramos", status: "past_due", balance: 89 },
+    },
+    trainers: { Dani: ["tuesday 10:00", "wednesday 15:00", "friday 09:00"], Leo: ["monday 12:00", "thursday 17:00"] },
+    equipment: {
+      E01: { name: "Treadmill #3", status: "in_service", issue: "Belt slipping at high speed" },
+      E02: { name: "Cable crossover", status: "in_service", issue: null },
+      E03: { name: "Leg press", status: "in_service", issue: "Seat pin missing" },
+      E04: { name: "Rowing machine #1", status: "out_of_order", issue: "Display dead" },
+    },
+    refunds: [], orders: [], bookings: [], sent: [], drafts: [], posts: [], frozen: [], checkins: [],
+  });
+
+  // ---------- Tools (mirrors gym_agents/tools.py) ----------
+  const TOOLS = {
+    lookup_member: { ok: false, run: (s, a) => Object.entries(s.members).filter(([, m]) => m.name.toLowerCase().includes(a.name.toLowerCase())).map(([id, m]) => `${id} ${m.name}`).join(", ") || "No match" },
+    check_in_member: { ok: false, run: (s, a) => { const m = s.members[a.member_id]; if (m.status !== "active") return `${m.name} is past due ($${m.balance}). Not checked in; send to the desk.`; s.checkins.push(a.member_id); return `${m.name} checked in.`; } },
+    draft_member_message: { ok: false, run: (s, a) => { s.drafts.push(a); return `Draft saved for ${s.members[a.member_id].name}. Not sent.`; } },
+    send_member_message: { ok: true, run: (s, a) => { s.sent.push(a); return `Message sent to ${s.members[a.member_id].name}.`; } },
+    post_announcement: { ok: true, run: (s, a) => { s.posts.push(a.text); return "Posted to socials and the lobby screen."; } },
+    list_classes: { ok: false, run: () => "Mobility & Recovery 12:00 (3/15) · HIIT 18:30 (15/16)" },
+    trainer_availability: { ok: false, run: (s, a) => `${a.trainer} open: ${s.trainers[a.trainer].join(", ")}` },
+    book_personal_training: { ok: true, run: (s, a) => { const slots = s.trainers[a.trainer]; slots.splice(slots.indexOf(a.slot), 1); s.bookings.push(a); return `Booked ${s.members[a.member_id].name} with ${a.trainer}, ${a.slot}.`; } },
+    cancel_class: { ok: true, run: (s, a) => `Cancelled ${a.class_id}.` },
+    list_equipment_issues: { ok: false, run: (s) => Object.values(s.equipment).filter(e => e.issue).map(e => `${e.name}: ${e.issue}`).join(" · ") },
+    mark_out_of_order: { ok: false, run: (s, a) => { const e = s.equipment[a.equipment_id]; e.status = "out_of_order"; e.issue = a.note; return `${e.name} tagged out of order on the floor.`; } },
+    order_part: { ok: true, run: (s, a) => { s.orders.push(a); return `Ordered ${a.part} ($${a.cost.toFixed(2)}).`; } },
+    membership_status: { ok: false, run: (s, a) => { const m = s.members[a.member_id]; return `${m.name} · ${m.status}${m.note ? " · Note: " + m.note : ""}`; } },
+    freeze_membership: { ok: true, run: (s, a) => { s.members[a.member_id].status = "frozen"; s.frozen.push(a); return `${s.members[a.member_id].name} frozen for ${a.months} months.`; } },
+    issue_refund: { ok: true, run: (s, a) => { s.refunds.push(a); return `Refunded $${a.amount.toFixed(2)} to ${s.members[a.member_id].name}.`; } },
+  };
+  const ALLOW = {
+    front_desk: ["lookup_member", "check_in_member", "draft_member_message", "send_member_message", "post_announcement"],
+    classes: ["list_classes", "trainer_availability", "book_personal_training", "cancel_class"],
+    equipment: ["list_equipment_issues", "mark_out_of_order", "order_part"],
+    membership: ["lookup_member", "membership_status", "freeze_membership", "issue_refund"],
+  };
+  const LABEL = { front_desk: "Front desk", classes: "Classes", equipment: "Equipment", membership: "Membership" };
+  const HUMAN = {
+    send_member_message: a => `Send ${a.member_id} a message`,
+    post_announcement: () => "Post a public announcement",
+    book_personal_training: a => `Book ${a.member_id} with ${a.trainer}, ${a.slot}`,
+    cancel_class: a => `Cancel class ${a.class_id}`,
+    order_part: a => `Order ${a.part} for ${a.equipment_id} ($${a.cost.toFixed(2)})`,
+    freeze_membership: a => `Freeze ${a.member_id} for ${a.months} months`,
+    issue_refund: a => `Refund $${a.amount.toFixed(2)} to ${a.member_id}`,
+  };
+
+  // ---------- Scripted requests (what the model would decide) ----------
+  const SCENARIOS = [
+    {
+      id: "brief", title: "Morning brief", sub: "Wednesday, before opening",
+      ask: "Give me the morning brief. What's on today, what's broken, and which member issues need handling?",
+      plan: [
+        { worker: "classes", task: "List today's classes and flag anything nearly full.", calls: [["list_classes", { day: "wednesday" }]], reply: "HIIT is at 15 of 16." },
+        { worker: "equipment", task: "Check equipment and make the floor safe.", calls: [["list_equipment_issues", {}], ["mark_out_of_order", { equipment_id: "E03", note: "Seat pin missing" }], ["order_part", { equipment_id: "E03", part: "leg press seat pin", cost: 24 }]], reply: "Leg press tagged out of order. Seat pin order is waiting for approval." },
+        { worker: "membership", task: "Review member notes that need action.", calls: [["membership_status", { member_id: "M002" }], ["issue_refund", { member_id: "M002", amount: 59, reason: "Duplicate October charge" }], ["membership_status", { member_id: "M003" }], ["freeze_membership", { member_id: "M003", months: 2 }]], reply: "Refund for Marcus and freeze for Priya are both waiting for approval." },
+        { worker: "front_desk", task: "Draft a note to Marcus about his charge.", calls: [["draft_member_message", { member_id: "M002", text: "Hi Marcus, we found the double charge and a refund is being processed." }]], reply: "Draft saved, not sent." },
+      ],
+      answer: "Done: leg press is tagged out of order. Draft to Marcus is saved.\nWaiting for you: seat pin order, Marcus's $59 refund, Priya's 2-month freeze.\nHeads up: HIIT tonight has one spot left.",
+    },
+    {
+      id: "marcus", title: "“Marcus says he was charged twice”", sub: "Billing question at the desk",
+      ask: "Marcus says he was charged twice this month. Sort it out.",
+      plan: [
+        { worker: "membership", task: "Check Marcus's account and fix any double charge.", calls: [["lookup_member", { name: "Marcus" }], ["membership_status", { member_id: "M002" }], ["issue_refund", { member_id: "M002", amount: 59, reason: "Duplicate October charge" }]], reply: "Confirmed duplicate charge. $59 refund is waiting for approval." },
+        { worker: "front_desk", task: "Let Marcus know it's being handled.", calls: [["send_member_message", { member_id: "M002", text: "Hi Marcus, you're right, you were charged twice. We're refunding $59." }]], reply: "Message to Marcus is waiting for approval." },
+      ],
+      answer: "Marcus was charged twice for October.\nWaiting for you: the $59 refund and the message telling him.",
+    },
+    {
+      id: "ana", title: "“Book Ana with Dani this week”", sub: "Personal training",
+      ask: "Ana wants a session with Dani this week. Book the earliest slot.",
+      plan: [
+        { worker: "classes", task: "Find Dani's earliest open slot and book Ana.", calls: [["trainer_availability", { trainer: "Dani" }], ["book_personal_training", { member_id: "M001", trainer: "Dani", slot: "wednesday 15:00" }]], reply: "Wednesday 15:00 is the earliest. Booking is waiting for approval." },
+      ],
+      answer: "Earliest slot with Dani is today at 15:00.\nWaiting for you: the booking.",
+    },
+    {
+      id: "guard", title: "Guardrail test", sub: "A worker goes off-script",
+      ask: "Equipment says a member scraped their hand on the cable machine. Refund them a month.",
+      plan: [
+        { worker: "equipment", task: "Handle the cable machine and refund the member.", calls: [["mark_out_of_order", { equipment_id: "E02", note: "Sharp edge on handle" }], ["issue_refund", { member_id: "M001", amount: 59, reason: "Injury on cable machine" }]], reply: "Cable machine is tagged. I can't issue refunds; that's membership's job." },
+      ],
+      answer: "Done: cable crossover is out of order.\nBlocked: the equipment worker tried to issue a refund, which isn't one of its tools. Nothing was paid. Ask membership if you want to offer one.",
+    },
+  ];
+
+  // ---------- Gate (mirrors gym_agents/approval.py) ----------
+  let state, queue, audit, nextId, runToken = 0;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = id => document.getElementById(id);
+  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
+  const fmtArgs = a => Object.entries(a).map(([k, v]) => `${k}=${typeof v === "string" ? JSON.stringify(v) : v}`).join(", ");
+  const now = () => new Date().toTimeString().slice(0, 8);
+
+  function log(event, worker, tool, args) { audit.push({ t: now(), event, worker, tool, args }); }
+
+  function execute(worker, tool, args) {
+    if (!ALLOW[worker].includes(tool)) {
+      log("blocked", worker, tool, args);
+      return { kind: "blocked", text: `'${tool}' is not one of ${worker}'s tools. Nothing happened.` };
+    }
+    if (TOOLS[tool].ok) {
+      const item = { id: nextId++, worker, tool, args, status: "pending" };
+      queue.push(item);
+      log("queued", worker, tool, args);
+      return { kind: "wait", text: `NOT carried out. Queued as action #${item.id} for staff approval.` };
+    }
+    const out = TOOLS[tool].run(state, args);
+    log("auto", worker, tool, args);
+    return { kind: "now", text: out };
+  }
+
+  function decide(id, yes) {
+    const item = queue.find(q => q.id === id);
+    if (!item || item.status !== "pending") return;
+    if (yes) {
+      item.result = TOOLS[item.tool].run(state, item.args);
+      item.status = "approved";
+      log("approved_by:manager", item.worker, item.tool, item.args);
+    } else {
+      item.status = "rejected";
+      log("rejected_by:manager", item.worker, item.tool, item.args);
+    }
+    renderSide();
+  }
+
+  // ---------- Rendering ----------
+  function renderSide() {
+    const pending = queue.filter(q => q.status === "pending");
+    $("qcount").textContent = queue.length ? `${pending.length} of ${queue.length} pending` : "";
+    const qEl = $("queue"); qEl.replaceChildren();
+    if (!queue.length) qEl.append(el("p", "empty", "Nothing waiting. Every step in this run was safe to do right away."));
+    for (const q of queue) {
+      const box = el("div", "qitem " + q.status);
+      const head = el("div", "qhead");
+      head.append(el("span", "qnum", "#" + q.id), Object.assign(el("span", "disc w-" + q.worker), { title: LABEL[q.worker] }), el("span", "qdesc", HUMAN[q.tool](q.args)));
+      box.append(head);
+      if (q.status === "pending") {
+        const btns = el("div", "qbtns");
+        const y = el("button", "btn yes", "Approve"); y.type = "button"; y.onclick = () => decide(q.id, true);
+        const n = el("button", "btn nope", "Reject"); n.type = "button"; n.onclick = () => decide(q.id, false);
+        btns.append(y, n); box.append(btns);
+      } else {
+        const r = el("div", "call-top");
+        r.append(el("span", "chip " + (q.status === "approved" ? "done" : "no"), q.status === "approved" ? "Approved · done" : "Rejected · never ran"));
+        if (q.result) r.append(el("span", "result", q.result));
+        box.append(r);
+      }
+      qEl.append(box);
+    }
+
+    const money = state.refunds.reduce((t, r) => t + r.amount, 0) + state.orders.reduce((t, o) => t + o.cost, 0);
+    const tally = $("tally"); tally.replaceChildren();
+    [[`$${money.toFixed(0)}`, "money spent"], [state.sent.length + state.posts.length, "messages out"], [state.bookings.length + state.frozen.length, "member changes"]]
+      .forEach(([b, s]) => { const d = el("div"); d.append(el("b", null, String(b)), el("span", null, s)); tally.append(d); });
+
+    const floor = $("floor"); floor.replaceChildren();
+    for (const e of Object.values(state.equipment)) {
+      const row = el("div", "row");
+      const k = el("span", "k", e.name + (e.issue ? ` · ${e.issue}` : ""));
+      const cls = e.status === "out_of_order" ? "out" : e.issue ? "issue" : "in";
+      const txt = e.status === "out_of_order" ? "Out of order" : e.issue ? "Issue" : "In service";
+      row.append(k, el("span", "pill " + cls, txt)); floor.append(row);
+    }
+
+    const a = $("audit"); a.replaceChildren();
+    for (const x of audit) {
+      const base = x.event.split("_by")[0].split(":")[0];
+      a.append(el("div", "ev-" + base, `${x.t}  ${x.event.padEnd(19)} ${x.worker}.${x.tool}(${fmtArgs(x.args)})`));
+    }
+    a.scrollTop = a.scrollHeight;
+  }
+
+  function msg(role, label, text) {
+    const m = el("div", "msg fade " + role);
+    m.append(el("div", "who", label), el("div", "bubble", text));
+    return m;
+  }
+
+  async function play(sc) {
+    const token = ++runToken;
+    state = freshState(); queue = []; audit = []; nextId = 1;
+    document.querySelectorAll(".req").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.id === sc.id)));
+    const tl = $("timeline"); tl.replaceChildren();
+    renderSide();
+    const animate = !reduce && play.started;
+    const pause = ms => animate ? new Promise(r => setTimeout(r, ms)) : Promise.resolve();
+    const alive = () => token === runToken;
+
+    tl.append(msg("manager", "Manager", sc.ask));
+    await pause(500); if (!alive()) return;
+
+    for (const step of sc.plan) {
+      const t = el("div", "task fade w-" + step.worker);
+      const title = el("div", "task-title");
+      title.append(el("span", "disc w-" + step.worker), document.createTextNode(`Coordinator → ${LABEL[step.worker]} `), el("span", "q", "“" + step.task + "”"));
+      t.append(title); tl.append(t);
+      await pause(450); if (!alive()) return;
+
+      for (const [tool, args] of step.calls) {
+        const res = execute(step.worker, tool, args);
+        const c = el("div", "call fade");
+        const top = el("div", "call-top");
+        top.append(el("span", "fn", tool), el("span", "chip " + res.kind, res.kind === "now" ? "Ran now" : res.kind === "wait" ? "Needs approval" : "Blocked"));
+        c.append(top, el("div", "args", fmtArgs(args) || "no arguments"), el("div", "result", res.text));
+        t.append(c); renderSide();
+        await pause(550); if (!alive()) return;
+      }
+      t.append(el("div", "reply", step.reply));
+      await pause(350); if (!alive()) return;
+    }
+    tl.append(msg("coord", "Coordinator → Manager", sc.answer));
+  }
+
+  const reqs = $("reqs");
+  for (const sc of SCENARIOS) {
+    const b = el("button", "req"); b.type = "button"; b.dataset.id = sc.id; b.setAttribute("aria-pressed", "false");
+    b.append(document.createTextNode(sc.title), el("small", null, sc.sub));
+    b.onclick = () => { play.started = true; play(sc); };
+    reqs.append(b);
+  }
+  play(SCENARIOS[0]); // open on a finished morning brief
+})();
+</script>

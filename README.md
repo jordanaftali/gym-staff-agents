@@ -20,6 +20,10 @@ flowchart TD
     G -. every step .-> A[(audit.jsonl)]
 ```
 
+## See it in action
+
+Open [`docs/index.html`](docs/index.html) in a browser for a clickable demo: pick a request, watch the coordinator hand work to each worker, and approve or reject what's waiting. It's a simulation with sample data, so no API key is needed.
+
 ## Why I built this
 
 Strength training is a big part of my life. I've trained for years and competed in amateur bodybuilding, so I've seen the front-desk side of a lot of gyms: a staff of two handling a billing question, a broken leg press and a line at check-in all at once.
