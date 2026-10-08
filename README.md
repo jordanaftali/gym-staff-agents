@@ -1,6 +1,6 @@
 # Gym Staff Agents
 
-AI helpers for a small gym's staff, built in Python on Claude.
+A personal project exploring how AI agents can help gym staff, built in Python with Claude.
 
 One **coordinator** agent talks to the gym manager and hands work to four narrow **worker** agents: front desk, classes, equipment, and membership. Anything that **spends money, commits the gym to a member, or goes public** stops at an **approval gate** until a human says yes.
 
