@@ -24,7 +24,7 @@ flowchart TD
 
 Strength training is a big part of my life. I've trained for years and competed in amateur bodybuilding, so I've seen the front-desk side of a lot of gyms: a staff of two handling a billing question, a broken leg press and a line at check-in all at once.
 
-I wanted to explore what AI helpers could look like in that setting, with one firm rule: they can take care of the routine work, but anything that costs money or affects a member waits for a person to approve it. This project is also part of my focus on building tools for the fitness industry as a Design Engineer working in Python.
+I wanted to explore what AI helpers could look like in that setting, with one firm rule: they can take care of the routine work, but anything that costs money or affects a member waits for a person to approve it. This project is also part of my focus on building tools for the strength training and sports industry as a Design Engineer working in Python.
 
 ## What the helpers can do
 
